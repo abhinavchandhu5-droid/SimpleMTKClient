@@ -1,51 +1,33 @@
-
-name: Build SimpleMTKClient macOS
+name: Build SimpleMTKClient macOS Intel
 
 on:
   workflow_dispatch:
 
 jobs:
   build:
-    runs-on: macos-15-intel
-
+    runs-on: macos-15
+    permissions:
+      contents: read
     steps:
       - name: Checkout source
         uses: actions/checkout@v4
 
-      - name: Select Xcode
+      - name: Build x86_64 Release
         run: |
-          xcodebuild -version
+          set -o pipefail
+          xcodebuild ARCHS=x86_64 ONLY_ACTIVE_ARCH=NO -scheme SimpleMTK -configuration Release -derivedDataPath build CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO clean build
 
-      - name: Clear Swift package caches
+      - name: Verify and package x86_64 app
         run: |
-          rm -rf ~/Library/Developer/Xcode/DerivedData
-          rm -rf ~/Library/Caches/org.swift.swiftpm
+          APP="build/Build/Products/Release/SimpleMTK.app"
+          test -d "$APP"
+          file "$APP/Contents/MacOS/SimpleMTK"
+          lipo -verify_arch x86_64 "$APP/Contents/MacOS/SimpleMTK"
+          ditto -c -k --sequesterRsrc --keepParent "$APP" "$RUNNER_TEMP/SimpleMTKClient-x86_64.zip"
 
-      - name: Build Intel macOS app
-        run: |
-          xcodebuild \
-            -project SimpleMTK.xcodeproj \
-            -scheme SimpleMTK \
-            -configuration Release \
-            -destination 'generic/platform=macOS' \
-            -derivedDataPath "$RUNNER_TEMP/SimpleMTKBuild" \
-            -arch x86_64 \
-            ARCHS=x86_64 \
-            ONLY_ACTIVE_ARCH=NO \
-            CODE_SIGNING_ALLOWED=NO \
-            clean build
-
-      - name: Package built app
-        run: |
-          APP=$(find "$RUNNER_TEMP/SimpleMTKBuild/Build/Products/Release" -maxdepth 1 -name '*.app' -type d -print -quit)
-          if [ -z "$APP" ]; then
-            echo "No .app found"
-            exit 1
-          fi
-          ditto -c -k --sequesterRsrc --keepParent "$APP" "$RUNNER_TEMP/SimpleMTKClient-macOS.zip"
-
-      - name: Upload application
+      - name: Upload x86_64 app
         uses: actions/upload-artifact@v4
         with:
-          name: SimpleMTKClient-macOS
-          path: ${{ runner.temp }}/SimpleMTKClient-macOS.zip
+          name: SimpleMTKClient-x86_64
+          path: ${{ runner.temp }}/SimpleMTKClient-x86_64.zip
+          if-no-files-found: error
