@@ -1,0 +1,30 @@
+name: Build SimpleMTKClient macOS
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-15
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Build macOS app
+        run: |
+          xcodebuild -project SimpleMTK.xcodeproj -scheme SimpleMTK -configuration Release -derivedDataPath "$RUNNER_TEMP/SimpleMTKBuild" CODE_SIGNING_ALLOWED=NO build
+
+      - name: Package built app
+        run: |
+          APP=$(find "$RUNNER_TEMP/SimpleMTKBuild/Build/Products/Release" -maxdepth 1 -name '*.app' -type d -print -quit)
+          if [ -z "$APP" ]; then
+            echo 'No .app found in Release build output'
+            exit 1
+          fi
+          ditto -c -k --sequesterRsrc --keepParent "$APP" "$RUNNER_TEMP/SimpleMTKClient-macOS.zip"
+
+      - name: Upload application
+        uses: actions/upload-artifact@v4
+        with:
+          name: SimpleMTKClient-macOS
+          path: $&#123;&#123; runner.temp &#125;&#125;/SimpleMTKClient-macOS.zip
