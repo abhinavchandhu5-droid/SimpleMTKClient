@@ -1,3 +1,4 @@
+
 name: Build SimpleMTKClient macOS
 
 on:
@@ -5,14 +6,24 @@ on:
 
 jobs:
   build:
-    runs-on: macos-15
+    runs-on: macos-15-intel
+
     steps:
       - name: Checkout source
         uses: actions/checkout@v4
 
-      - name: Build macOS app
+      - name: Build Intel macOS app
         run: |
-          xcodebuild -project SimpleMTK.xcodeproj -scheme SimpleMTK -configuration Release -derivedDataPath "$RUNNER_TEMP/SimpleMTKBuild" CODE_SIGNING_ALLOWED=NO build
+          xcodebuild \
+            -project SimpleMTK.xcodeproj \
+            -scheme SimpleMTK \
+            -configuration Release \
+            -derivedDataPath "$RUNNER_TEMP/SimpleMTKBuild" \
+            -destination "generic/platform=macOS,arch=x86_64" \
+            ARCHS=x86_64 \
+            ONLY_ACTIVE_ARCH=YES \
+            CODE_SIGNING_ALLOWED=NO \
+            build
 
       - name: Package built app
         run: |
@@ -27,4 +38,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: SimpleMTKClient-macOS
-          path: $&#123;&#123; runner.temp &#125;&#125;/SimpleMTKClient-macOS.zip
+          path: ${{ runner.temp }}/SimpleMTKClient-macOS.zip
