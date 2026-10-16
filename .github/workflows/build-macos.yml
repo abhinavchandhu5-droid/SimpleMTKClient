@@ -12,6 +12,15 @@ jobs:
       - name: Checkout source
         uses: actions/checkout@v4
 
+      - name: Select Xcode
+        run: |
+          xcodebuild -version
+
+      - name: Clear Swift package caches
+        run: |
+          rm -rf ~/Library/Developer/Xcode/DerivedData
+          rm -rf ~/Library/Caches/org.swift.swiftpm
+
       - name: Build Intel macOS app
         run: |
           xcodebuild \
@@ -19,9 +28,10 @@ jobs:
             -scheme SimpleMTK \
             -configuration Release \
             -derivedDataPath "$RUNNER_TEMP/SimpleMTKBuild" \
-            -destination "generic/platform=macOS,arch=x86_64" \
-            ARCHS=x86_64 \
-            ONLY_ACTIVE_ARCH=YES \
+            -clonedSourcePackagesDirPath "$RUNNER_TEMP/SourcePackages" \
+            -destination "generic/platform=macOS" \
+            -arch x86_64 \
+            ONLY_ACTIVE_ARCH=NO \
             CODE_SIGNING_ALLOWED=NO \
             build
 
@@ -29,7 +39,7 @@ jobs:
         run: |
           APP=$(find "$RUNNER_TEMP/SimpleMTKBuild/Build/Products/Release" -maxdepth 1 -name '*.app' -type d -print -quit)
           if [ -z "$APP" ]; then
-            echo 'No .app found in Release build output'
+            echo "No .app found"
             exit 1
           fi
           ditto -c -k --sequesterRsrc --keepParent "$APP" "$RUNNER_TEMP/SimpleMTKClient-macOS.zip"
