@@ -15,38 +15,29 @@ jobs:
       - name: Checkout source
         uses: actions/checkout@v4
 
-      - name: Check Xcode
+      - name: Check Xcode and architecture
         run: |
           xcodebuild -version
           uname -m
 
-      - name: Build Intel x86_64 app
+      - name: Build Intel macOS app
         run: |
           xcodebuild \
             -project SimpleMTK.xcodeproj \
             -scheme SimpleMTK \
             -configuration Release \
-           -destination 'generic/platform=macOS' \
+            -destination 'generic/platform=macOS' \
             -derivedDataPath build \
-            -arch x86_64 \
-            ARCHS=x86_64 \
-            ONLY_ACTIVE_ARCH=YES \
             CODE_SIGNING_ALLOWED=NO \
             clean build
 
       - name: Verify and package Intel app
         run: |
           APP="build/Build/Products/Release/SimpleMTK.app"
-
           test -d "$APP"
-
           file "$APP/Contents/MacOS/SimpleMTK"
-
           lipo -verify_arch x86_64 "$APP/Contents/MacOS/SimpleMTK"
-
-          ditto -c -k --sequesterRsrc --keepParent \
-            "$APP" \
-            "$RUNNER_TEMP/SimpleMTKClient-x86_64.zip"
+          ditto -c -k --sequesterRsrc --keepParent "$APP" "$RUNNER_TEMP/SimpleMTKClient-x86_64.zip"
 
       - name: Upload Intel app
         uses: actions/upload-artifact@v4
