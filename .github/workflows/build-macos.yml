@@ -36,7 +36,8 @@ jobs:
           APP="build/Build/Products/Release/SimpleMTK.app"
           test -d "$APP"
           file "$APP/Contents/MacOS/SimpleMTK"
-          lipo -verify_arch x86_64 "$APP/Contents/MacOS/SimpleMTK"
+          lipo -info "$APP/Contents/MacOS/SimpleMTK"
+          file "$APP/Contents/MacOS/SimpleMTK" | grep -q "x86_64"
           ditto -c -k --sequesterRsrc --keepParent "$APP" "$RUNNER_TEMP/SimpleMTKClient-x86_64.zip"
 
       - name: Upload Intel app
